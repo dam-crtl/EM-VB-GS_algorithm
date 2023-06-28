@@ -68,7 +68,7 @@ data = np.concatenate([
 num_clusters = 4
 num_iterations = 100
 assignments, means, covs = gibbs_sampling(data, 4, num_iterations)
-a
+
 # 結果表示
 print("クラスタリング結果:")
 for i in range(num_clusters):
