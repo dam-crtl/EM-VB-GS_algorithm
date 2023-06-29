@@ -57,12 +57,6 @@ def maximization(data, posteriors):
     return means, covs, pi
 
 def gmm(data, n_clusters, n_iterations):
-    """
-    GMMを実行する関数
-    data: 入力データ
-    n_clusters: クラスター数
-    n_iterations: 反復回数
-    """
     means, covs, pi = initialize_parameters(data, n_clusters)
 
     for _ in range(n_iterations):
