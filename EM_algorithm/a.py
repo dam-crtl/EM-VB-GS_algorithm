@@ -10,6 +10,7 @@ def multivariate_gaussian(x, mean, cov):
 
 def initialize_parameters(data, n_clusters):
     n_samples, n_features = data.shape
+    np.random.seed(seed=42)
     means = np.zeros((n_clusters, n_features))
     for i in range(n_clusters):
         means[i] = data[np.random.choice(n_samples)]
@@ -71,14 +72,15 @@ X = data.values
 Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
 
-# GMMの実行
 n_clusters = 4
 n_iterations = 100
 means, covs, pi = gmm(X, n_clusters, n_iterations)
-
-# 各データ点の所属クラスターを予測
 posteriors = expectation(X, means, covs, pi)
+
+posteriors = pd.DataFrame
 predicted_labels = np.argmax(posteriors, axis=1)
+
+
 
 # クラスターごとに色を設定
 colors = ['red', 'green', 'blue', 'orange']
