@@ -20,73 +20,73 @@ with open(txt_dir) as f:
 l = np.array(l)
 
 class VBGMM():
-  def __init__(self, K=6, alpha0=0.1):
-    self.K = K
+  def __init__(self, X, n_clusters=4, alpha0=0.1):
+    self.n_clusters = n_clusters
     self.alpha0 = alpha0
   
   def init_params(self, X):
-    self.N, self.D = X.shape
+    self.n_sample, self.D = X.shape
     self.m0 = np.random.randn(self.D)
     self.beta0 = np.array([1.0])
     self.W0 = np.eye(self.D)
-    self.nu0 = np.array([self.D])
+    self.n_sampleu0 = np.array([self.D])
     
-    self.N_k = (self.N / self.K) + np.zeros(self.K)
+    self.n_sample_k = (self.n_sample / self.n_clusters) + np.zeros(self.n_clusters)
     
-    self.alpha = np.ones(self.K) * self.alpha0
-    self.beta = np.ones(self.K) * self.beta0
-    self.m = np.random.randn(self.K, self.D)
-    self.W = np.tile(self.W0, (self.K, 1, 1))
-    self.nu = np.ones(self.K)*self.D
+    self.alpha = np.ones(self.n_clusters) * self.alpha0
+    self.beta = np.ones(self.n_clusters) * self.beta0
+    self.m = np.random.randn(self.n_clusters, self.D)
+    self.W = np.tile(self.W0, (self.n_clusters, 1, 1))
+    self.n_sampleu = np.ones(self.n_clusters)*self.D
     
-    self.Sigma = np.zeros((self.K, self.D, self.D))
-    for k in range(self.K):
-      self.Sigma[k] = la.inv(self.nu[k] * self.W[k])
+    self.Sigma = np.zeros((self.n_clusters, self.D, self.D))
+    for k in range(self.n_clusters):
+      self.Sigma[k] = la.inv(self.n_sampleu[k] * self.W[k])
     self.Mu = self.m
   
-  def e_step(self, X):
+  def expectation(self, X):
     pi = digamma(self.alpha) - digamma(self.alpha.sum())
-    Lambda_tilde = np.zeros((self.K))
-    for k in range(self.K):
+    Lambda_tilde = np.zeros((self.n_clusters))
+    for k in range(self.n_clusters):
       digamma_sum = np.array([])
       for i in range(self.D):
-        digamma_sum = np.append(digamma_sum, digamma((self.nu[k] + 1 - i)/2))
+        digamma_sum = np.append(digamma_sum, digamma((self.n_sampleu[k] + 1 - i)/2))
       A = np.sum(digamma_sum)
       B = self.D * np.log(2)
       C = np.log(la.det(self.W[k]))
       Lambda_tilde[k] = A + B + C
-    rho = np.zeros((self.N, self.K))
-    for n in range(self.N):
-      for k in range(self.K):         
+    rho = np.zeros((self.n_sample, self.n_clusters))
+    for n in range(self.n_sample):
+      for k in range(self.n_clusters):         
         gap = (X[n] - self.m[k])[:, None]
         A = -(self.D/(2*self.beta[k]))
-        B = -(self.nu[k]/2)*(gap.T@self.W[k]@gap)
+        B = -(self.n_sampleu[k]/2)*(gap.T@self.W[k]@gap)
         rho[n][k] = pi[k] + 0.5*Lambda_tilde[k] + A + B
     r_log = rho - logsumexp(rho, axis=1)[:,None]
     r = np.exp(r_log)
-    r[np.isnan(r)] = 1.0 / (self.K)
+    r[np.isnan(r)] = 1.0 / (self.n_clusters)
     return r
   
-  def m_step(self, X, r):
-      self.N_k = np.sum(r, axis=0, keepdims=True).T
-      barx = (r.T @ X) / self.N_k
-      S_list = np.zeros((self.N, self.K, self.D, self.D))
-      for n in range(self.N):
-        for k in range(self.K):
+  def maximization(self, X, r):
+      self.n_sample_k = np.sum(r, axis=0, keepdims=True).T
+      barx = (r.T @ X) / self.n_sample_k
+      S_list = np.zeros((self.n_sample, self.n_clusters, self.D, self.D))
+      for n in range(self.n_sample):
+        for k in range(self.n_clusters):
           gap = (X[n] - barx[k])[:, None]
           S_list[n][k] = r[n][k] * gap @ gap.T
-      S = np.sum(S_list, axis=0) / self.N_k[:,None]
-      self.alpha = self.alpha0 + self.N_k
-      self.beta = self.beta0 + self.N_k
-      for k in range(self.K):  
-        self.m[k] = (1/self.beta[k]) * (self.beta0 * self.m0 + self.N_k[k] * barx[k])
-      for k in range(self.K):
+      S = np.sum(S_list, axis=0) / self.n_sample_k[:,None]
+      self.alpha = self.alpha0 + self.n_sample_k
+      self.beta = self.beta0 + self.n_sample_k
+      for k in range(self.n_clusters):  
+        self.m[k] = (1/self.beta[k]) * (self.beta0 * self.m0 + self.n_sample_k[k] * barx[k])
+      for k in range(self.n_clusters):
         gap = (barx[k] - self.m0)[:, None]
         A = la.inv(self.W0)
-        B = self.N_k[k] * S[k]
-        C = ((self.beta0*self.N_k[k]) / (self.beta0 + self.N_k[k])) * gap@gap.T
+        B = self.n_sample_k[k] * S[k]
+        C = ((self.beta0*self.n_sample_k[k]) / (self.beta0 + self.n_sample_k[k])) * gap@gap.T
         self.W[k] = la.inv(A + B + C)
-        self.nu[k] = self.nu0 + self.N_k[k]
+        self.n_sampleu[k] = self.n_sampleu0 + self.n_sample_k[k]
       pi = self.alpha / np.sum(self.alpha, keepdims=True)
       return pi
   
@@ -101,46 +101,46 @@ class VBGMM():
     Eps = eps*np.eye(sigma.shape[0])
     sigma_inv = la.inv(sigma)
     sigma_det = la.det(sigma)
-    for i in range(self.N):
+    for i in range(self.n_sample):
       output = np.append(output, self.calc(X[i], mu, sigma_inv, sigma_det))
     return output
   
   def mix_gauss(self, X, Mu, Sigma, Pi):
-    output = np.array([Pi[i]*self.gauss(X, Mu[i], Sigma[i]) for i in range(self.K)])
+    output = np.array([Pi[i]*self.gauss(X, Mu[i], Sigma[i]) for i in range(self.n_clusters)])
     return output, np.sum(output, 0)[None,:]
   
   def log_likelihood(self, X, pi):
-    for i in range(self.K):
-      self.Sigma[i] = la.inv(self.nu[i] * self.W[i])
+    for i in range(self.n_clusters):
+      self.Sigma[i] = la.inv(self.n_sampleu[i] * self.W[i])
     self.Mu = self.m
     _, out_sum = self.mix_gauss(X, self.Mu, self.Sigma, pi)
-    logs = np.array([np.log(out_sum[0][n]) for n in range(self.N)])
+    logs = np.array([np.log(out_sum[0][n]) for n in range(self.n_sample)])
     return np.sum(logs)
   
   def fit(self, X, iter_max, thr):
     self.init_params(X)
-    log_list = np.array([])
-    pi = np.array([1/self.K for i in range(self.K)])
-    log_list = np.append(log_list, self.log_likelihood(X, pi))
+    likelihood_list = np.array([])
+    pi = np.array([1/self.n_clusters for i in range(self.n_clusters)])
+    likelihood_list = np.append(likelihood_list, self.log_likelihood(X, pi))
     count = 0
     for i in range(iter_max):
-      r = self.e_step(X)
-      pi = self.m_step(X, r)
-      log_list = np.append(log_list, self.log_likelihood(X, pi))
-      if np.abs(log_list[count] - log_list[count+1]) < thr:
-        return count+1, log_list, r, pi, self.Mu, self.Sigma
+      r = self.expectation(X)
+      pi = self.maximization(X, r)
+      likelihood_list = np.append(likelihood_list, self.log_likelihood(X, pi))
+      if np.abs(likelihood_list[count] - likelihood_list[count+1]) < thr:
+        return count+1, likelihood_list, r, pi, self.Mu, self.Sigma
       else:
-        print("Previous log-likelihood gap:" + str(np.abs(log_list[count] - log_list[count+1])))
+        print("Previous log-likelihood gap:" + str(np.abs(likelihood_list[count] - likelihood_list[count+1])))
         count += 1
         
   def classify(self, X):
-    return np.argmax(self.e_step(X), 1)   
+    return np.argmax(self.expectation(X), 1)   
 
 model = VBGMM(K=4, alpha0=0.01)
-n_iter, log_list, r, pi, Mu, Sigma = model.fit(l, iter_max=100, thr = 0.01)
+n_iter, likelihood_list, r, pi, Mu, Sigma = model.fit(l, iter_max=100, thr = 0.01)
 labels = model.classify(l)
 print(n_iter)
-print(log_list)
+print(likelihood_list)
 
 
 cm = plt.get_cmap("tab10")

@@ -26,8 +26,7 @@ class BayesianGMM:
             beta_n = self.beta_0 + N_j
             alpha_n = self.alpha_0 + N_j
             m_n = (self.beta_0 * self.m_0 + np.sum(responsibilities[:, j] * data.T, axis=1)) / beta_n
-            W_n_inv = np.linalg.inv(self.W_0) + np.sum(
-                responsibilities[:, j, np.newaxis, np.newaxis] *
+            W_n_inv = np.linalg.inv(self.W_0) + np.sum(responsibilities[:, j, np.newaxis, np.newaxis] *
                 np.array([np.outer(x - self.m_0, x - self.m_0) for x in data]), axis=0
             ) + (self.beta_0 * N_j / beta_n) * np.outer(self.m_0 - self.cluster_params[j]['mean'], self.m_0 - self.cluster_params[j]['mean'])
             W_n = np.linalg.inv(W_n_inv)
@@ -42,7 +41,8 @@ class BayesianGMM:
             for j in range(self.n_clusters):
                 responsibilities[i, j] = multivariate_normal.pdf(data[i], self.cluster_params[j]['mean'], np.linalg.inv(self.cluster_params[j]['precision']))
 
-        responsibilities = responsibilities * np.repeat(self.alpha_0 / self.n_clusters, 4 * n_samples).reshape(-1, self.n_clusters)
+        #responsibilities = responsibilities * np.repeat(self.alpha_0 / self.n_clusters, n_samples).reshape(-1, self.n_clusters)
+        responsibilities = responsibilities * self.alpha_0 / self.n_clusters
         responsibilities = responsibilities / np.sum(responsibilities, axis=1)[:, np.newaxis]
 
         return responsibilities
@@ -56,6 +56,7 @@ class BayesianGMM:
 
     def predict(self, data):
         responsibilities = self._update_responsibilities(data)
+        print(responsibilities)
         return np.argmax(responsibilities, axis=1)
 
 # データの生成
@@ -98,7 +99,7 @@ bayesian_gmm.fit(data)
 
 # 各データ点の所属クラスターを予測
 predicted_labels = bayesian_gmm.predict(data)
-
+print(predicted_labels)
 # クラスターごとに色を設定
 colors = ['red', 'green', 'blue', 'orange']
 cluster_colors = [colors[label] for label in predicted_labels]
