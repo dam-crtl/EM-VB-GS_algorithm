@@ -18,27 +18,22 @@ with open(txt_dir) as f:
         l[i][j] = float(l[i][j])
 l = np.array(l)
 
-class VBGMM():
+class VB_algorithm_GMM():
   def __init__(self, X, n_clusters=4, alpha0=0.1):
     self.n_clusters = n_clusters
     self.alpha0 = alpha0
-  
-  def init_params(self, X):
-    self.n_sample, self.D = X.shape
-    self.m0 = np.random.randn(self.D)
+    self.n_sample, self.n_feature = X.shape
+    self.m0 = np.random.randn(self.n_feature)
     self.beta0 = np.array([1.0])
-    self.W0 = np.eye(self.D)
-    self.n_sampleu0 = np.array([self.D])
-    
+    self.W0 = np.eye(self.n_feature)
+    self.n_sampleu0 = np.array([self.n_feature])
     self.n_sample_k = (self.n_sample / self.n_clusters) + np.zeros(self.n_clusters)
-    
     self.alpha = np.ones(self.n_clusters) * self.alpha0
     self.beta = np.ones(self.n_clusters) * self.beta0
-    self.m = np.random.randn(self.n_clusters, self.D)
+    self.m = np.random.randn(self.n_clusters, self.n_feature)
     self.W = np.tile(self.W0, (self.n_clusters, 1, 1))
-    self.n_sampleu = np.ones(self.n_clusters)*self.D
-    
-    self.Sigma = np.zeros((self.n_clusters, self.D, self.D))
+    self.n_sampleu = np.ones(self.n_clusters)*self.n_feature
+    self.Sigma = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
     for k in range(self.n_clusters):
       self.Sigma[k] = la.inv(self.n_sampleu[k] * self.W[k])
     self.mu = self.m
@@ -48,17 +43,14 @@ class VBGMM():
     Lambda_tilde = np.zeros((self.n_clusters))
     for k in range(self.n_clusters):
       digamma_sum = np.array([])
-      for i in range(self.D):
-        digamma_sum = np.append(digamma_sum, digamma((self.n_sampleu[k] + 1 - i)/2))
-      A = np.sum(digamma_sum)
-      B = self.D * np.log(2)
-      C = np.log(la.det(self.W[k]))
-      Lambda_tilde[k] = A + B + C
+      for i in range(self.n_feature):
+        digamma_sum.appned(digamma((self.n_sampleu[k] + 1 - i)/2))
+      Lambda_tilde[k] = np.sum(digamma_sum) + self.n_feature * np.log(2) + np.log(la.det(self.W[k]))
     rho = np.zeros((self.n_sample, self.n_clusters))
     for n in range(self.n_sample):
       for k in range(self.n_clusters):         
         gap = (X[n] - self.m[k])[:, None]
-        A = -(self.D/(2*self.beta[k]))
+        A = -(self.n_feature/(2*self.beta[k]))
         B = -(self.n_sampleu[k]/2)*(gap.T@self.W[k]@gap)
         rho[n][k] = pi[k] + 0.5*Lambda_tilde[k] + A + B
     r_log = rho - logsumexp(rho, axis=1)[:,None]
@@ -69,7 +61,7 @@ class VBGMM():
   def maximization(self, X, r):
       self.n_sample_k = np.sum(r, axis=0, keepdims=True).T
       barx = (r.T @ X) / self.n_sample_k
-      S_list = np.zeros((self.n_sample, self.n_clusters, self.D, self.D))
+      S_list = np.zeros((self.n_sample, self.n_clusters, self.n_feature, self.n_feature))
       for n in range(self.n_sample):
         for k in range(self.n_clusters):
           gap = (X[n] - barx[k])[:, None]
@@ -93,17 +85,17 @@ class VBGMM():
     Sigma_inv = np.linalg.inv(Sigma)
     Sigma_det = np.linalg.det(Sigma)
     exponent = -(x - mu).T @ Sigma_inv.T @ (x - mu) / 2.0
-    const = 1 / ((np.sqrt(2*np.pi)**self.D) * np.sqrt(Sigma_det))
+    const = 1 / ((np.sqrt(2*np.pi)**self.n_feature) * np.sqrt(Sigma_det))
     return const * np.exp(exponent)
   
-  def gauss(self, X, mu, Sigma):
+  def mixed_gaussian(self, X, mu, Sigma, pi):
     output = np.array([])
     eps = np.spacing(1)
     Eps = eps*np.eye(sigma.shape[0])
-    sigma_inv = la.inv(sigma)
-    sigma_det = la.det(sigma)
+    sigma_inv = np.linalg.inv(sigma)
+    sigma_det = np.linalga.det(sigma)
     for i in range(self.n_sample):
-      output = np.append(output, self.calc(X[i], mu, sigma_inv, sigma_det))
+      output = append(, self.calc(X[i], mu, sigma_inv, sigma_det))
     return output
   
   def mix_gauss(self, X, Mu, Sigma, Pi):
