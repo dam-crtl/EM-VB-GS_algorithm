@@ -90,19 +90,19 @@ class VBGMM():
       pi = self.alpha / np.sum(self.alpha, keepdims=True)
       return pi
   
-  def calc(self, x, mu, sigma_inv, sigma_det):
-    exp = -0.5*(x - mu).T@sigma_inv.T@(x - mu)
+  def calc(self, x, Mu, sigma_inv, sigma_det):
+    exp = -0.5*(x - Mu).T@sigma_inv.T@(x - Mu)
     denomin = np.sqrt(sigma_det)*(np.sqrt(2*np.pi)**self.D)
     return np.exp(exp)/denomin
   
-  def gauss(self, X, mu, sigma):
+  def gauss(self, X, Mu, sigma):
     output = np.array([])
     eps = np.spacing(1)
     Eps = eps*np.eye(sigma.shape[0])
     sigma_inv = la.inv(sigma)
     sigma_det = la.det(sigma)
     for i in range(self.N):
-      output = np.append(output, self.calc(X[i], mu, sigma_inv, sigma_det))
+      output = np.append(output, self.calc(X[i], Mu, sigma_inv, sigma_det))
     return output
   
   def mix_gauss(self, X, Mu, Sigma, Pi):

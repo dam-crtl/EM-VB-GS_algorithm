@@ -19,12 +19,14 @@ with open(txt_dir) as f:
 l = np.array(l)
 
 class VB_algorithm_GMM():
-  def __init__(self, X, n_clusters=4, alpha0=0.1):
+  def __init__(self, n_clusters=4, alpha0=0.1):
     self.n_clusters = n_clusters
     self.alpha0 = alpha0
+    self.beta0 = np.array([1.0])
+    
+  def init_params(self, X):
     self.n_sample, self.n_feature = X.shape
     self.m0 = np.random.randn(self.n_feature)
-    self.beta0 = np.array([1.0])
     self.W0 = np.eye(self.n_feature)
     self.n_sampleu0 = np.array([self.n_feature])
     self.n_sample_k = (self.n_sample / self.n_clusters) + np.zeros(self.n_clusters)
@@ -79,7 +81,7 @@ class VB_algorithm_GMM():
       pi = self.alpha / np.sum(self.alpha, keepdims=True)
       return pi
   
-  def gaussian_function(self, x, mu, Sigma):
+  def multivariate_gaussian(self, x, mu, Sigma):
     Sigma_inv = np.linalg.inv(Sigma)
     Sigma_det = np.linalg.det(Sigma)
     exponent = -(x - mu).T @ Sigma_inv.T @ (x - mu) / 2.0
@@ -87,24 +89,16 @@ class VB_algorithm_GMM():
     return const * np.exp(exponent)
   
   def mixed_gaussian(self, X, mu, Sigma, pi):
-    output = np.array([])
-    eps = np.spacing(1)
-    Eps = eps*np.eye(sigma.shape[0])
-    sigma_inv = np.linalg.inv(sigma)
-    sigma_det = np.linalga.det(sigma)
-    for i in range(self.n_sample):
-      output = append(, self.calc(X[i], mu, sigma_inv, sigma_det))
+    output = 0
+    for i in range(self.n_clusters):
+      output += pi[i] * self.multivariate_gaussian(X[i], mu[i], Sigma[i])
     return output
-  
-  def mix_gauss(self, X, Mu, Sigma, Pi):
-    output = np.array([Pi[i]*self.gauss(X, Mu[i], Sigma[i]) for i in range(self.n_clusters)])
-    return output, np.sum(output, 0)[None,:]
   
   def log_likelihood(self, X, pi):
     for i in range(self.n_clusters):
-      self.Sigma[i] = la.inv(self.n_sampleu[i] * self.W[i])
+      self.Sigma[i] = np.linalg.inv(self.n_sampleu[i] * self.W[i])
     self.mu = self.m
-    _, out_sum = self.mix_gauss(X, self.mu, self.Sigma, pi)
+    out_sum = self.mix_gauss(X, self.mu, self.Sigma, pi)
     logs = np.array([np.log(out_sum[0][n]) for n in range(self.n_sample)])
     return np.sum(logs)
   
