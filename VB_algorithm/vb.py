@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import linalg as la
 from scipy.special import digamma, gamma, logsumexp
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import sys
 
@@ -42,7 +41,7 @@ class VBGMM():
     self.Sigma = np.zeros((self.n_clusters, self.D, self.D))
     for k in range(self.n_clusters):
       self.Sigma[k] = la.inv(self.n_sampleu[k] * self.W[k])
-    self.Mu = self.m
+    self.mu = self.m
   
   def expectation(self, X):
     pi = digamma(self.alpha) - digamma(self.alpha.sum())
@@ -90,12 +89,14 @@ class VBGMM():
       pi = self.alpha / np.sum(self.alpha, keepdims=True)
       return pi
   
-  def calc(self, x, mu, sigma_inv, sigma_det):
-    exp = -0.5*(x - mu).T@sigma_inv.T@(x - mu)
-    denomin = np.sqrt(sigma_det)*(np.sqrt(2*np.pi)**self.D)
-    return np.exp(exp)/denomin
+  def gaussian_function(self, x, mu, Sigma):
+    Sigma_inv = np.linalg.inv(Sigma)
+    Sigma_det = np.linalg.det(Sigma)
+    exponent = -(x - mu).T @ Sigma_inv.T @ (x - mu) / 2.0
+    const = 1 / ((np.sqrt(2*np.pi)**self.D) * np.sqrt(Sigma_det))
+    return const * np.exp(exponent)
   
-  def gauss(self, X, mu, sigma):
+  def gauss(self, X, mu, Sigma):
     output = np.array([])
     eps = np.spacing(1)
     Eps = eps*np.eye(sigma.shape[0])
@@ -112,8 +113,8 @@ class VBGMM():
   def log_likelihood(self, X, pi):
     for i in range(self.n_clusters):
       self.Sigma[i] = la.inv(self.n_sampleu[i] * self.W[i])
-    self.Mu = self.m
-    _, out_sum = self.mix_gauss(X, self.Mu, self.Sigma, pi)
+    self.mu = self.m
+    _, out_sum = self.mix_gauss(X, self.mu, self.Sigma, pi)
     logs = np.array([np.log(out_sum[0][n]) for n in range(self.n_sample)])
     return np.sum(logs)
   
@@ -126,9 +127,10 @@ class VBGMM():
     for i in range(iter_max):
       r = self.expectation(X)
       pi = self.maximization(X, r)
-      likelihood_list = np.append(likelihood_list, self.log_likelihood(X, pi))
+      likelihood = self.log_likelihood(X, pi)
+      print(f"iteration {i + 1} : log_likelihood: {likelihood}")
       if np.abs(likelihood_list[count] - likelihood_list[count+1]) < thr:
-        return count+1, likelihood_list, r, pi, self.Mu, self.Sigma
+        return count+1, likelihood_list, r, pi, self.mu, self.Sigma
       else:
         print("Previous log-likelihood gap:" + str(np.abs(likelihood_list[count] - likelihood_list[count+1])))
         count += 1
@@ -136,7 +138,7 @@ class VBGMM():
   def classify(self, X):
     return np.argmax(self.expectation(X), 1)   
 
-model = VBGMM(K=4, alpha0=0.01)
+model = VBGMM(n_clusters=4, alpha0=0.01)
 n_iter, likelihood_list, r, pi, Mu, Sigma = model.fit(l, iter_max=100, thr = 0.01)
 labels = model.classify(l)
 print(n_iter)
