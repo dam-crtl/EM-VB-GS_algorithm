@@ -73,10 +73,10 @@ class VB_algorithm_GMM():
         self.m[k] = (1/self.beta[k]) * (self.beta0 * self.m0 + self.n_sample_k[k] * barx[k])
       for k in range(self.n_clusters):
         gap = (barx[k] - self.m0)[:, None]
-        A = la.inv(self.W0)
+        A = np.linalg.inv(self.W0)
         B = self.n_sample_k[k] * S[k]
         C = ((self.beta0*self.n_sample_k[k]) / (self.beta0 + self.n_sample_k[k])) * gap@gap.T
-        self.W[k] = la.inv(A + B + C)
+        self.W[k] = np.linalg.inv(A + B + C)
         self.n_sampleu[k] = self.n_sampleu0 + self.n_sample_k[k]
       pi = self.alpha / np.sum(self.alpha, keepdims=True)
       return pi
