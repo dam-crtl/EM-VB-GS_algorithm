@@ -49,10 +49,8 @@ class VB_algorithm_GMM():
     rho = np.zeros((self.n_sample, self.n_clusters))
     for n in range(self.n_sample):
       for k in range(self.n_clusters):         
-        gap = (X[n] - self.m[k])[:, None]
-        A = -(self.n_feature/(2*self.beta[k]))
-        B = -(self.n_sampleu[k]/2)*(gap.T@self.W[k]@gap)
-        rho[n][k] = pi[k] + 0.5*Lambda_tilde[k] + A + B
+        gap = (X[n] - self.m[k]).reshape(-1, 1)
+        rho[n][k] = pi[k] + Lambda_tilde[k]/2.0 - (self.n_feature/(2*self.beta[k])) -(self.n_sampleu[k]/2)*(gap.T@self.W[k]@gap)
     r_log = rho - logsumexp(rho, axis=1)[:,None]
     r = np.exp(r_log)
     r[np.isnan(r)] = 1.0 / (self.n_clusters)
