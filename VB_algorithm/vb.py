@@ -35,7 +35,7 @@ class VB_algorithm_GMM():
     self.n_sampleu = np.ones(self.n_clusters)*self.n_feature
     self.Sigma = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
     for k in range(self.n_clusters):
-      self.Sigma[k] = la.inv(self.n_sampleu[k] * self.W[k])
+      self.Sigma[k] = np.linalg.inv(self.n_sampleu[k] * self.W[k])
     self.mu = self.m
   
   def expectation(self, X):
@@ -60,19 +60,19 @@ class VB_algorithm_GMM():
   
   def maximization(self, X, r):
       self.n_sample_k = np.sum(r, axis=0, keepdims=True).T
-      barx = (r.T @ X) / self.n_sample_k
+      gamma_x = (r.T @ X) / self.n_sample_k
       S_list = np.zeros((self.n_sample, self.n_clusters, self.n_feature, self.n_feature))
       for n in range(self.n_sample):
         for k in range(self.n_clusters):
-          gap = (X[n] - barx[k])[:, None]
+          gap = (X[n] - gamma_x[k])[:, None]
           S_list[n][k] = r[n][k] * gap @ gap.T
       S = np.sum(S_list, axis=0) / self.n_sample_k[:,None]
       self.alpha = self.alpha0 + self.n_sample_k
       self.beta = self.beta0 + self.n_sample_k
       for k in range(self.n_clusters):  
-        self.m[k] = (1/self.beta[k]) * (self.beta0 * self.m0 + self.n_sample_k[k] * barx[k])
+        self.m[k] = (1/self.beta[k]) * (self.beta0 * self.m0 + self.n_sample_k[k] * gamma_x[k])
       for k in range(self.n_clusters):
-        gap = (barx[k] - self.m0)[:, None]
+        gap = (gamma_x[k] - self.m0)[:, None]
         A = np.linalg.inv(self.W0)
         B = self.n_sample_k[k] * S[k]
         C = ((self.beta0*self.n_sample_k[k]) / (self.beta0 + self.n_sample_k[k])) * gap@gap.T
