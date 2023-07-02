@@ -15,7 +15,7 @@ class GMM():
 
         return
     
-    def fit(self, X, max_iter=1000, threshold=1e-05):
+    def fit(self, X, max_iter=1000, threshold=1e-02):
         num_samples = X.shape[0]
         dim = X.shape[1]
         print(dim)
@@ -42,7 +42,7 @@ class GMM():
             
             prev = loss
         
-        return self
+        return self.gamma
 
     def __init_params(self, dim, num_samples):
         self.mu = np.random.rand(self.num_clusters, dim)
@@ -80,14 +80,11 @@ class GMM():
         return gamma
     
     def __gauss(self, x, mu, Sigma):
-        if np.linalg.det(Sigma) == 0:
-            print(Sigma)
-        Lambda = np.linalg.inv(Sigma)
-        c = np.sqrt((2 * np.pi) ** self.dim) * np.sqrt(np.linalg.det(Sigma))
-        residue = (x - mu).reshape((-1, 1))
-        exponent = (- residue.T @ Lambda @ residue / 2)[0][0]
-            
-        return np.exp(exponent) / c
+        Sigma_inv = np.linalg.inv(Sigma)
+        Sigma_det = np.linalg.det(Sigma)
+        const = 1 / np.sqrt(((2 * np.pi) ** self.dim)) * np.sqrt(Sigma_det)
+        exponent = -(x - mu).T @ Sigma_inv @ (x - mu) / 2.0
+        return  const * np.exp(exponent)
     
     def __calc_mu(self, X):
         mu = np.zeros_like(self.mu)
@@ -141,4 +138,21 @@ Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
 
 gmm = GMM(num_clusters=4)
-gmm.fit(X)
+gamma = gmm.fit(X)
+
+predicted_labels = np.argmax(gamma, axis=1)
+
+
+
+# クラスターごとに色を設定
+colors = ['red', 'green', 'blue', 'orange']
+cluster_colors = [colors[label] for label in predicted_labels]
+
+# データ点とクラスターをプロット
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=cluster_colors)
+plt.show()

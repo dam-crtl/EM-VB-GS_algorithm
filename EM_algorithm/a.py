@@ -44,7 +44,7 @@ def maximization(data, posteriors):
 
     means = np.zeros((n_clusters, n_features))
     for j in range(n_clusters):
-        means[j] = np.average(data, axis=0, pi=posteriors[:, j])
+        means[j] = np.average(data, axis=0, weights=posteriors[:, j])
 
     covs = np.zeros((n_clusters, n_features, n_features))
     for j in range(n_clusters):
@@ -77,7 +77,6 @@ n_iterations = 100
 means, covs, pi = gmm(X, n_clusters, n_iterations)
 posteriors = expectation(X, means, covs, pi)
 
-posteriors = pd.DataFrame
 predicted_labels = np.argmax(posteriors, axis=1)
 
 

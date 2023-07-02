@@ -18,7 +18,7 @@ class EM_algorithm_GMM():
         np.random.seed(seed = 42)
         self.n_samples, self.n_feature = X.shape
         self.max_iter = iter_max
-        self.mu = np.random.randn(self.n_clusters, self.n_feature)
+        self.mu = 10 * np.random.randn(self.n_clusters, self.n_feature)
         self.pi = np.ones((self.n_clusters)) * (1 / self.n_clusters)
         self.gamma = np.random.rand(self.n_samples, self.n_clusters)
         self.Sigma = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
@@ -33,33 +33,42 @@ class EM_algorithm_GMM():
             for k in range(self.n_clusters):
                 pi[k] = self.pi[k] * self._multivariate_gaussian(x[n], self.mu[k], self.Sigma[k])
                 sum_pi += pi[k]
+            #sum_pi = np.sum(pi, axis=0)
             for k in range(self.n_clusters):
                 gamma[n][k] = pi[k] / sum_pi
         self.gamma = gamma
 
+    
     def _maximization(self, x):
         pi = np.zeros_like(self.pi)
         mu = np.zeros_like(self.mu)
         Sigma = np.zeros_like(self.Sigma)
         for m in range(self.n_clusters):
+            #sum_gamma = np.sum(self.gamma[:, m])
             sum_gamma = 0
             sum_gamma_x = np.zeros_like(self.mu[m])
             sum_gamma_xx = np.zeros_like(self.Sigma[m])
+            #self.pi[m] = sum_gamma / self.n_samples
+            #self.pi[m] = np.mean(self.gamma, axis = 1)
             for n in range(self.n_samples):
                 sum_gamma += self.gamma[n][m]
                 sum_gamma_x += self.gamma[n][m] * x[n]
+                sum_gamma_xx += self.gamma[n][m] * (x[n] - self.mu[m]).reshape((-1, 1)) @ (x[n] - self.mu[m]).reshape((-1, 1)).T
+            #self.mu[m] = sum_gamma_x / sum_gamma
+            #for n in range(self.n_clusters):
+                #sum_gamma_xx += self.gamma[n][m] * (x[n] - self.mu[m]).reshape((-1, 1)) @ (x[n] - self.mu[m]).reshape((-1, 1)).T
             pi[m] = sum_gamma / self.n_samples
             mu[m] = sum_gamma_x / sum_gamma
-            for n in range(self.n_samples):
-                #sum_gamma_xx += self.gamma[n][m] * (x[n] - mu[m]).reshape((-1, 1)) @ (x[n] - mu[m]).reshape((-1, 1)).T
-                sum_gamma_xx += self.gamma[n][m] * x[n].reshape((-1, 1)) @ x[n].reshape((-1, 1)).T
-            Sigma[m] = sum_gamma_xx / sum_gamma - mu[m].reshape((-1, 1)) @ mu[m].reshape((-1, 1)).T
+            Sigma[m] = sum_gamma_xx / sum_gamma
+            #self.mu[m] = sum_gamma_x / sum_gamma
+            #self.Sigma[m] = sum_gamma_xx / sum_gamma
+        #self.pi = np.sum(self.gamma, axis=0)/self.n_samples
         self.pi = pi
         self.mu = mu
         self.Sigma = Sigma
     
     def _multivariate_gaussian(self, x, mu, Sigma):
-        Sigma_inv = np.linalg.pinv(Sigma)
+        Sigma_inv = np.linalg.inv(Sigma)
         Sigma_det = np.linalg.det(Sigma)
         const = 1 / (np.sqrt(((2 * np.pi) ** self.n_feature)) * np.sqrt(Sigma_det))
         exponent = -(x - mu).T @ Sigma_inv @ (x - mu) / 2.0
