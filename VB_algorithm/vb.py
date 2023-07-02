@@ -20,11 +20,11 @@ l = np.array(l)
 
 
 class VB_algorithm_GMM:
-    def __init__(self, n_clusters=4, alpha0=0.1):
+    def __init__(self, n_clusters=4):
         self.n_clusters = n_clusters
-        self.alpha0 = alpha0
+        self.alpha0 = 0.01
         self.beta0 = 1.0
-        self.threshold = 1e-2
+        self.threshold = 0.01
 
     def _init_params(self, X):
         np.random.seed(seed=42)
@@ -112,7 +112,7 @@ class VB_algorithm_GMM:
             logs += np.log(gaussians[i])
         return logs
 
-    def fit(self, X, iter_max, thr):
+    def fit(self, X, iter_max):
         self._init_params(X)
         pi = np.array([1 / self.n_clusters for i in range(self.n_clusters)])
         prelikelihood = -1000000
@@ -122,7 +122,7 @@ class VB_algorithm_GMM:
             likelihood = self.log_likelihood(X, pi)
             print(f"number of iteration {i + 1} : log-likelihood {likelihood}")
             if np.abs(likelihood - prelikelihood) < self.threshold:
-                print("early stop!")
+                print("Early Stop!")
                 return gamma, pi, self.mu, self.Sigma
             else:
                 prelikelihood = likelihood
@@ -132,7 +132,7 @@ class VB_algorithm_GMM:
 
 
 model = VB_algorithm_GMM(n_clusters=4, alpha0=0.01)
-gamma, pi, mu, Sigma = model.fit(l, iter_max=100, thr=0.01)
+gamma, pi, mu, Sigma = model.fit(l, iter_max=100)
 labels = model.classify(l)
 
 
