@@ -3,7 +3,7 @@ import numpy as np
 #b = np.array([1, 2, 3, 4]).reshape((-1, 1))
 #b = np.array([1, 2, 3])
 #c = np.array([5, 6, 7, 8]).reshape((-1, 1))
-#d = np.eye(3)
+e = np.eye(3)
 #ans = b.T @ d @ b
 #b = np.array([[1, 2, 3], [1, 2 ,3]])
 
@@ -12,11 +12,13 @@ b = np.array([1, 2, 3])[:, None]
 c = np.array([1, 2, 3]).reshape((-1, 1))
 d = np.array([1, 2, 3]).reshape((1, -1))
 #pi = c / np.sum(c, keepdims=True)
+
 print(a)
 print(b)
 print(c)
 print(d)
-print(np.array([1, 2, 3]).T)
+print(e / np.array([1, 2, 3])[:, None])
+print(e / np.array([1, 2, 3]))
 #a.append(1)
 #print(a)
 #ans = (b - c).T @ d @ (b - c)
