@@ -1,9 +1,12 @@
 import sys
 import numpy as np
 import pandas as pd
-
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 class EM_algorithm_GMM():
     def __init__(self, n_clusters = 4):
+        np.random.seed(seed = 42)
         self.n_clusters = n_clusters
         self.threshold = 0.00001
         self.n_feature = None
@@ -15,7 +18,7 @@ class EM_algorithm_GMM():
         self.Sigma = None
             
     def _init_params(self, X, iter_max):
-        np.random.seed(seed = 42)
+        
         self.n_samples, self.n_feature = X.shape
         self.max_iter = iter_max
         self.mu = np.random.randn(self.n_clusters, self.n_feature)
@@ -93,26 +96,17 @@ data = pd.read_csv(path_to_csv)
 X = data.values
 Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
-#a = np.array([1, 2, 3]).reshape((-1, 1))
-#matrix = a @ a.T
-#print(matrix)
-emgmm = EM_algorithm_GMM()
-gamma, pi, mu, Sigma = emgmm.fit(X)
-print(pi)
-print(mu)
-predicted_labels = np.argmax(gamma, axis=1)
 
+model = EM_algorithm_GMM()
+gamma, pi, mu, Sigma = model.fit(X)
+labels = np.argmax(gamma, axis=1)
 
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
 
-# クラスターごとに色を設定
-colors = ['red', 'green', 'blue', 'orange']
-cluster_colors = [colors[label] for label in predicted_labels]
-
-# データ点とクラスターをプロット
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=cluster_colors)
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
 plt.show()
