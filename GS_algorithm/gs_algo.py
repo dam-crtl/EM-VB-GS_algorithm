@@ -19,7 +19,7 @@ with open(txt_dir) as f:
 l = np.array(l)
 
 
-class VB_algorithm_GMM:
+class GS_algorithm_GMM:
     def __init__(self, n_clusters=4):
         self.n_clusters = n_clusters
         self.alpha0 = 0.01
@@ -50,7 +50,11 @@ class VB_algorithm_GMM:
             sum_digamma = 0
             for i in range(self.n_feature):
                 sum_digamma += digamma((self.nu[k] + 1 - i) / 2)
-            Lambda_tilde[k] = (sum_digamma + self.n_feature * np.log(2) + np.log(np.linalg.det(self.W[k])))
+            Lambda_tilde[k] = (
+                sum_digamma
+                + self.n_feature * np.log(2)
+                + np.log(np.linalg.det(self.W[k]))
+            )
         rho = np.zeros((self.n_sample, self.n_clusters))
         for n in range(self.n_sample):
             for k in range(self.n_clusters):
@@ -60,7 +64,17 @@ class VB_algorithm_GMM:
         log_gamma = rho - logsumexp(rho, axis=1).reshape(-1, 1)
         gamma = np.exp(log_gamma)
         return gamma
-
+    def _sample_z(self, X):
+        
+        return
+    def _sample_pi(self, X):
+        return
+    def _sample_Lambda(self, X):
+        return
+    def _sample_mu(self, X):
+        return
+    
+    
     def maximization(self, X, gamma):
         self.gamma = np.sum(gamma, axis=0, keepdims=True).T
         gamma_x = (gamma.T @ X) / self.gamma
@@ -73,15 +87,14 @@ class VB_algorithm_GMM:
         self.alpha = self.alpha0 + self.gamma
         self.beta = self.beta0 + self.gamma
         for k in range(self.n_clusters):
-            self.m[k] = (1 / self.beta[k]) * (self.beta0 * self.m0 + self.gamma[k] * gamma_x[k])
+            self.m[k] = (1 / self.beta[k]) * (
+                self.beta0 * self.m0 + self.gamma[k] * gamma_x[k]
+            )
         for k in range(self.n_clusters):
             residual = (gamma_x[k] - self.m0).reshape(-1, 1)
             self.W[k] = np.linalg.inv(np.linalg.inv(self.W0) + self.gamma[k] * S[k] 
                                       + ((self.beta0 * self.gamma[k]) / (self.beta0 + self.gamma[k])) * residual @ residual.T)
             self.nu[k] = self.nu0 + self.gamma[k]
-        for i in range(self.n_clusters):
-            self.Sigma[i] = np.linalg.inv(self.nu[i] * self.W[i])
-        self.mu = self.m
         pi = self.alpha / np.sum(self.alpha)
         return pi
 
@@ -100,6 +113,9 @@ class VB_algorithm_GMM:
         return output
 
     def log_likelihood(self, X, pi):
+        for i in range(self.n_clusters):
+            self.Sigma[i] = np.linalg.inv(self.nu[i] * self.W[i])
+        self.mu = self.m
         gaussians = self.mixed_gaussian(X, self.mu, self.Sigma, pi)
         logs = 0
         for i in range(self.n_sample):
@@ -112,7 +128,7 @@ class VB_algorithm_GMM:
         prelikelihood = -1000000
         for i in range(iter_max):
             gamma = self.expectation(X)
-            pi = self.maximization(X, gamma)
+            pi = self.maximization(X, r)
             likelihood = self.log_likelihood(X, pi)
             print(f"number of iteration {i + 1} : log-likelihood {likelihood}")
             if np.abs(likelihood - prelikelihood) < self.threshold:
@@ -125,7 +141,7 @@ class VB_algorithm_GMM:
         return np.argmax(self.expectation(X), 1)
 
 
-model = VB_algorithm_GMM(n_clusters=4)
+model = VB_algorithm_GMM(n_clusters=4, alpha0=0.01)
 gamma, pi, mu, Sigma = model.fit(l, iter_max=100)
 labels = model.classify(l)
 

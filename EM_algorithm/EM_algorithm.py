@@ -48,11 +48,9 @@ class EM_algorithm_GMM():
             for n in range(self.n_samples):
                 sum_gamma += self.gamma[n][m]
                 sum_gamma_x += self.gamma[n][m] * x[n]
+                sum_gamma_xx += self.gamma[n][m] * x[n].reshape((-1, 1)) @ x[n].reshape((-1, 1)).T
             pi[m] = sum_gamma / self.n_samples
             mu[m] = sum_gamma_x / sum_gamma
-            for n in range(self.n_samples):
-                #sum_gamma_xx += self.gamma[n][m] * (x[n] - mu[m]).reshape((-1, 1)) @ (x[n] - mu[m]).reshape((-1, 1)).T
-                sum_gamma_xx += self.gamma[n][m] * x[n].reshape((-1, 1)) @ x[n].reshape((-1, 1)).T
             Sigma[m] = sum_gamma_xx / sum_gamma - mu[m].reshape((-1, 1)) @ mu[m].reshape((-1, 1)).T
         self.pi = pi
         self.mu = mu
