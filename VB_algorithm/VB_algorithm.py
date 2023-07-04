@@ -1,114 +1,146 @@
+import sys
 import numpy as np
-from scipy.stats import multivariate_normal
-
-class BayesianGMM:
-    def __init__(self, n_clusters, alpha_0, beta_0, m_0, W_0):
-        self.n_clusters = n_clusters
-        self.alpha_0 = alpha_0
-        self.beta_0 = beta_0
-        self.m_0 = m_0
-        self.W_0 = W_0
-        self.cluster_params = []
-
-    def _initialize_cluster_params(self, data):
-        n_samples, n_features = data.shape
-        for _ in range(self.n_clusters):
-            mean = np.random.randn(n_features)
-            precision = np.linalg.inv(self.W_0)
-            self.cluster_params.append({'mean': mean, 'precision': precision})
-
-    def _update_cluster_params(self, data, responsibilities):
-        n_samples = data.shape[0]
-        for j in range(self.n_clusters):
-            N_j = np.sum(responsibilities[:, j])
-
-            # パラメータの更新式
-            beta_n = self.beta_0 + N_j
-            alpha_n = self.alpha_0 + N_j
-            m_n = (self.beta_0 * self.m_0 + np.sum(responsibilities[:, j] * data.T, axis=1)) / beta_n
-            W_n_inv = np.linalg.inv(self.W_0) + np.sum(responsibilities[:, j, np.newaxis, np.newaxis] *
-                np.array([np.outer(x - self.m_0, x - self.m_0) for x in data]), axis=0
-            ) + (self.beta_0 * N_j / beta_n) * np.outer(self.m_0 - self.cluster_params[j]['mean'], self.m_0 - self.cluster_params[j]['mean'])
-            W_n = np.linalg.inv(W_n_inv)
-
-            self.cluster_params[j] = {'mean': m_n, 'precision': W_n}
-
-    def _update_responsibilities(self, data):
-        n_samples = data.shape[0]
-        responsibilities = np.zeros((n_samples, self.n_clusters))
-
-        for i in range(n_samples):
-            for j in range(self.n_clusters):
-                responsibilities[i, j] = multivariate_normal.pdf(data[i], self.cluster_params[j]['mean'], np.linalg.inv(self.cluster_params[j]['precision']))
-
-        #responsibilities = responsibilities * np.repeat(self.alpha_0 / self.n_clusters, n_samples).reshape(-1, self.n_clusters)
-        responsibilities = responsibilities * self.alpha_0 / self.n_clusters
-        responsibilities = responsibilities / np.sum(responsibilities, axis=1)[:, np.newaxis]
-
-        return responsibilities
-
-    def fit(self, data, max_iterations=10):
-        self._initialize_cluster_params(data)
-
-        for _ in range(max_iterations):
-            responsibilities = self._update_responsibilities(data)
-            self._update_cluster_params(data, responsibilities)
-
-    def predict(self, data):
-        responsibilities = self._update_responsibilities(data)
-        print(responsibilities)
-        return np.argmax(responsibilities, axis=1)
-
-# データの生成
-np.random.seed(42)
-
-# クラスターごとのデータ点の数
-n_samples = 100
-
-# クラスター1
-mean1 = np.array([0, 0, 0])
-cov1 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-cluster1 = np.random.multivariate_normal(mean1, cov1, n_samples)
-
-# クラスター2
-mean2 = np.array([5, 5, 5])
-cov2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-cluster2 = np.random.multivariate_normal(mean2, cov2, n_samples)
-
-# クラスター3
-mean3 = np.array([-5, -5, -5])
-cov3 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-cluster3 = np.random.multivariate_normal(mean3, cov3, n_samples)
-
-# クラスター4
-mean4 = np.array([5, -5, 0])
-cov4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-cluster4 = np.random.multivariate_normal(mean4, cov4, n_samples)
-
-# データ行列の作成
-data = np.concatenate([cluster1, cluster2, cluster3, cluster4])
-
-# 変分ベイズアルゴリズムの実行
-n_clusters = 4
-alpha_0 = 1.0
-beta_0 = 1.0
-m_0 = np.zeros(3)
-W_0 = np.eye(3)
-bayesian_gmm = BayesianGMM(n_clusters, alpha_0, beta_0, m_0, W_0)
-bayesian_gmm.fit(data)
-
-# 各データ点の所属クラスターを予測
-predicted_labels = bayesian_gmm.predict(data)
-print(predicted_labels)
-# クラスターごとに色を設定
-colors = ['red', 'green', 'blue', 'orange']
-cluster_colors = [colors[label] for label in predicted_labels]
-
-# データ点とクラスターをプロット
+import pandas as pd
+from scipy.special import digamma, logsumexp
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from mpl_toolkits.mplot3d import Axes3D
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(data[:, 0], data[:, 1], data[:, 2], c=cluster_colors)
+
+class VB_algorithm_GMM:
+    def __init__(self, n_clusters=4):
+        np.random.seed(seed=42)
+        self.n_clusters = n_clusters
+        self.alpha0 = 0.01
+        self.beta0 = 1.0
+        self.threshold = 0.01
+        self.n_sample = None
+        self.n_feature = None
+        self.m0 = None
+        self.W0 = None
+        self.nu0 = None
+        self.gamma = None
+        self.alpha = None
+        self.beta = None
+        self.m = None
+        self.W = None
+        self.pi = None
+        self.nu = None
+        self.Sigma = None
+
+    def _init_params(self, X):
+        self.n_sample, self.n_feature = X.shape
+        self.m0 = np.random.randn(self.n_feature)
+        self.W0 = np.eye(self.n_feature)
+        self.nu0 = np.array([self.n_feature])
+        self.gamma = np.ones((self.n_sample, self.n_clusters)) * (self.n_sample / self.n_clusters)
+        self.alpha = np.ones(self.n_clusters) * self.alpha0
+        self.beta = np.ones(self.n_clusters) * self.beta0
+        self.m = np.random.randn(self.n_clusters, self.n_feature)
+        self.pi = np.ones((self.n_clusters)) / self.n_clusters
+        self.nu = np.ones((self.n_clusters, 1)) * self.n_feature
+        self.W = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        self.Sigma = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        for k in range(self.n_clusters):
+            self.W[k] = np.eye(self.n_feature)
+            self.Sigma[k] = np.linalg.inv(self.nu[k] * self.W[k])
+        self.mu = np.random.randn(self.n_clusters, self.n_feature)
+
+    def _expectation(self, X):
+        pi = digamma(self.alpha) - digamma(np.sum(self.alpha))
+        log_Lambda = np.zeros(self.n_clusters)
+        for k in range(self.n_clusters):
+            sum_digamma = 0
+            for i in range(self.n_feature):
+                sum_digamma += digamma((self.nu[k] + 1 - i) / 2)
+            log_Lambda[k] = np.array([sum_digamma])[0][0] + self.n_feature * np.log(2) + np.log(np.linalg.det(self.W[k]))
+        rho = np.zeros((self.n_sample, self.n_clusters))
+        for n in range(self.n_sample):
+            for k in range(self.n_clusters):
+                residual = X[n] - self.m[k]
+                rho[n][k] = (pi[k] + log_Lambda[k] / 2.0 - (self.n_feature / (2 * self.beta[k]))
+                             - (self.nu[k] / 2.0) * (residual.T @ self.W[k] @ residual))[0]
+        log_gamma = rho - logsumexp(rho, axis=1).reshape(-1, 1)
+        self.gamma = np.exp(log_gamma)
+
+    def _maximization(self, X):
+        sum_gamma = np.zeros(self.n_clusters)
+        sum_gamma_x = np.zeros((self.n_clusters, self.n_feature))
+        sum_gamma_xx = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        for k in range(self.n_clusters):
+            for n in range(self.n_sample):
+                sum_gamma[k] += self.gamma[n][k]
+                sum_gamma_x[k] += self.gamma[n][k] * X[n]
+                sum_gamma_xx[k] += self.gamma[n][k] * X[n].reshape((-1, 1)) @ X[n].reshape((-1, 1)).T
+        self.alpha = self.alpha0 + sum_gamma
+        self.beta = self.beta0 + sum_gamma
+        for k in range(self.n_clusters):
+            self.m[k] = (self.beta0 * self.m0 + sum_gamma_x[k]) / (self.beta0 + sum_gamma[k])
+        self.mu = self.m
+        for k in range(self.n_clusters):
+            self.W[k] = np.linalg.inv(np.linalg.inv(self.W0) + self.beta0 * self.m0.reshape((-1, 1)) @ self.m0.reshape((-1, 1)).T 
+                                      + sum_gamma_xx[k] - self.beta[k] * self.m[k].reshape((-1, 1)) @ self.m[k].reshape((-1, 1)).T)
+            self.nu[k] = self.nu0 + sum_gamma[k]
+        for k in range(self.n_clusters):
+            self.Sigma[k] = np.linalg.inv(self.nu[k] * self.W[k])
+        self.pi = self.alpha / np.sum(self.alpha)
+
+    def _multivariate_gaussian(self, x, mu, Sigma):
+        Sigma_inv = np.linalg.inv(Sigma)
+        Sigma_det = np.linalg.det(Sigma)
+        exponent = -(x - mu).T @ Sigma_inv @ (x - mu) / 2.0
+        const = 1 / ((np.sqrt(2 * np.pi) ** self.n_feature) * np.sqrt(Sigma_det))
+        
+        return const * np.exp(exponent)
+
+    def _mixed_gaussian(self, X, mu, Sigma, pi):
+        output = np.zeros((self.n_sample))
+        for i in range(self.n_clusters):
+            for j in range(self.n_sample):
+                output[j] += pi[i] * self._multivariate_gaussian(X[j], mu[i], Sigma[i])
+                
+        return output
+
+    def _log_likelihood(self, X):
+        gaussians = self._mixed_gaussian(X, self.mu, self.Sigma, self.pi)
+        total_likelihood = 0
+        for i in range(self.n_sample):
+            total_likelihood += np.log(gaussians[i])
+            
+        return total_likelihood
+
+    def fit(self, X, iter_max):
+        self._init_params(X)
+        prelikelihood = -1000000
+        for i in range(iter_max):
+            self._expectation(X)
+            self._maximization(X)
+            likelihood = self._log_likelihood(X)
+            print(f"number of iteration {i + 1} : log-likelihood {likelihood}")
+            if np.abs(likelihood - prelikelihood) < self.threshold:
+                print("Early Stop!")
+                break
+            else:
+                prelikelihood = likelihood
+                
+        return self.gamma, self.pi, self.mu, self.Sigma
+
+path_to_csv = './x.csv'
+data = pd.read_csv(path_to_csv)
+X = data.values
+Y = [float(s) for s in data.columns]
+X = np.vstack([Y, X])
+
+model = VB_algorithm_GMM(n_clusters=4)
+gamma, pi, mu, Sigma = model.fit(X, iter_max=100)
+labels = np.argmax(gamma, axis=1)
+
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
+
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
 plt.show()
