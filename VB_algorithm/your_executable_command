@@ -1,0 +1,5 @@
+#in order to get  "params.dat" and "z.csv", please command  
+
+python VB_algorithm.py
+
+#after changing directory VB_algorithm

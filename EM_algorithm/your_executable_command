@@ -1,0 +1,5 @@
+#in order to get  "params.dat" and "z.csv", please command  
+
+python EM_algorithm.py
+
+#after changing directory "EM_algorithm"
