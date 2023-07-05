@@ -96,10 +96,21 @@ data = pd.read_csv(path_to_csv)
 X = data.values
 Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
+n_clusters = 4
 
-model = EM_algorithm_GMM()
+model = EM_algorithm_GMM(n_clusters=n_clusters)
 gamma, pi, mu, Sigma = model.fit(X)
 labels = np.argmax(gamma, axis=1)
+
+dfz = pd.DataFrame(gamma).to_csv('z.csv', index=False, header=None)
+with open('params.dat', 'w') as f:
+    f.write(f'Weight: pi\n')
+    f.write(str(pi))
+    f.write(f'\nMeans of Gaussian Functions: mu\n')
+    f.write(str(mu))
+    f.write(f'\nVariances of Gaussian Functions: Sigma\n')
+    f.write(str(Sigma))
+    f.close()
 
 cm = plt.get_cmap("tab10")
 fig = plt.figure(figsize=(8, 8))

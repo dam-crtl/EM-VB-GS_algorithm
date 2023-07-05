@@ -135,6 +135,16 @@ model = VB_algorithm_GMM(n_clusters=4)
 gamma, pi, mu, Sigma = model.fit(X, iter_max=100)
 labels = np.argmax(gamma, axis=1)
 
+dfz = pd.DataFrame(gamma).to_csv('z.csv', index=False, header=None)
+with open('params.dat', 'w') as f:
+    f.write(f'Weight: pi\n')
+    f.write(str(pi))
+    f.write(f'\nMeans of Gaussian Functions: mu\n')
+    f.write(str(mu))
+    f.write(f'\nVariances of Gaussian Functions: Sigma\n')
+    f.write(str(Sigma))
+    f.close()
+
 cm = plt.get_cmap("tab10")
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection="3d")
