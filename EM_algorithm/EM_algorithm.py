@@ -75,7 +75,7 @@ class EM_algorithm_GMM():
             total_likelihood += np.log(total)
         return total_likelihood 
     
-    def fit(self, x, iter_max = 100):
+    def fit(self, x, iter_max = 50):
         self._init_params(x, iter_max = iter_max) 
         prelikelihood = -100000
         for i in range(self.max_iter):
@@ -96,8 +96,10 @@ data = pd.read_csv(path_to_csv)
 X = data.values
 Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
-n_clusters = 4
 
+
+#assuming the number of cluster is 4
+n_clusters = 4
 model = EM_algorithm_GMM(n_clusters=n_clusters)
 gamma, pi, mu, Sigma = model.fit(X)
 labels = np.argmax(gamma, axis=1)
@@ -121,3 +123,40 @@ for n in range(n_sample):
     ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
 ax.view_init(elev=30, azim=45)
 plt.show()
+
+
+"""
+#assuming the number of cluster is 3
+n_clusters = 3
+model = EM_algorithm_GMM(n_clusters=n_clusters)
+gamma, pi, mu, Sigma = model.fit(X)
+labels = np.argmax(gamma, axis=1)
+
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
+
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
+plt.show()
+"""
+
+"""
+#assuming the number of cluster is 5
+n_clusters = 5
+model = EM_algorithm_GMM(n_clusters=n_clusters)
+gamma, pi, mu, Sigma = model.fit(X)
+labels = np.argmax(gamma, axis=1)
+
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
+
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
+plt.show()
+"""
