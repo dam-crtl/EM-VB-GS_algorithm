@@ -124,70 +124,75 @@ class VB_algorithm_GMM:
                 
         return self.gamma, self.pi, self.mu, self.Sigma
 
-path_to_csv = './x.csv'
-data = pd.read_csv(path_to_csv)
-X = data.values
-Y = [float(s) for s in data.columns]
-X = np.vstack([Y, X])
+    
+if __name__== '__main__':
+    
+    path_to_csv = './' + sys.argv[1]
+    data = pd.read_csv(path_to_csv)
+    X = data.values
+    Y = [float(s) for s in data.columns]
+    X = np.vstack([Y, X])
+    
+    """
+    #assuming the number of cluster is 4
+    n_clusters = 4
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    gamma, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(gamma, axis=1)
 
-#assuming the number of cluster is 4
-n_clusters = 4
-model = VB_algorithm_GMM(n_clusters=n_clusters)
-gamma, pi, mu, Sigma = model.fit(X)
-labels = np.argmax(gamma, axis=1)
+    dfz = pd.DataFrame(gamma).to_csv(sys.argv[2], index=False, header=None)
+    with open(sys.argv[3], 'w') as f:
+        f.write(f'Weight: pi\n')
+        f.write(str(pi))
+        f.write(f'\nMeans of Gaussian Functions: mu\n')
+        f.write(str(mu))
+        f.write(f'\nVariances of Gaussian Functions: Sigma\n')
+        f.write(str(Sigma))
+        f.close()
 
-dfz = pd.DataFrame(gamma).to_csv('z.csv', index=False, header=None)
-with open('params.dat', 'w') as f:
-    f.write(f'Weight: pi\n')
-    f.write(str(pi))
-    f.write(f'\nMeans of Gaussian Functions: mu\n')
-    f.write(str(mu))
-    f.write(f'\nVariances of Gaussian Functions: Sigma\n')
-    f.write(str(Sigma))
-    f.close()
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-cm = plt.get_cmap("tab10")
-fig = plt.figure(figsize=(8, 8))
-ax = fig.add_subplot(111, projection="3d")
-n_sample = X.shape[0]
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    """
+    
+    """
+    #assuming the number of cluster is 3
+    n_clusters = 3
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    gamma, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(gamma, axis=1)
 
-for n in range(n_sample):
-    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
-ax.view_init(elev=30, azim=45)
-plt.show()
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-"""
-#assuming the number of cluster is 3
-n_clusters = 3
-model = VB_algorithm_GMM(n_clusters=n_clusters)
-gamma, pi, mu, Sigma = model.fit(X)
-labels = np.argmax(gamma, axis=1)
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    """
 
-cm = plt.get_cmap("tab10")
-fig = plt.figure(figsize=(8, 8))
-ax = fig.add_subplot(111, projection="3d")
-n_sample = X.shape[0]
+    
+    #assuming the number of cluster is 5
+    n_clusters = 5
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    gamma, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(gamma, axis=1)
 
-for n in range(n_sample):
-    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
-ax.view_init(elev=30, azim=45)
-plt.show()
-"""
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-"""
-#assuming the number of cluster is 5
-n_clusters = 5
-model = VB_algorithm_GMM(n_clusters=n_clusters)
-gamma, pi, mu, Sigma = model.fit(X)
-labels = np.argmax(gamma, axis=1)
-
-cm = plt.get_cmap("tab10")
-fig = plt.figure(figsize=(8, 8))
-ax = fig.add_subplot(111, projection="3d")
-n_sample = X.shape[0]
-
-for n in range(n_sample):
-    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
-ax.view_init(elev=30, azim=45)
-plt.show()
-"""
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    
