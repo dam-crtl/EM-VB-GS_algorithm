@@ -133,7 +133,7 @@ if __name__== '__main__':
     Y = [float(s) for s in data.columns]
     X = np.vstack([Y, X])
     
-    """
+    
     #assuming the number of cluster is 4
     n_clusters = 4
     model = VB_algorithm_GMM(n_clusters=n_clusters)
@@ -159,7 +159,7 @@ if __name__== '__main__':
         ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
     ax.view_init(elev=30, azim=45)
     plt.show()
-    """
+    
     
     """
     #assuming the number of cluster is 3
@@ -179,7 +179,7 @@ if __name__== '__main__':
     plt.show()
     """
 
-    
+    """
     #assuming the number of cluster is 5
     n_clusters = 5
     model = VB_algorithm_GMM(n_clusters=n_clusters)
@@ -195,4 +195,4 @@ if __name__== '__main__':
         ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
     ax.view_init(elev=30, azim=45)
     plt.show()
-    
+    """

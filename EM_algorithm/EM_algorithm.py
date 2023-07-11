@@ -19,7 +19,6 @@ class EM_algorithm_GMM():
         self.Sigma = None
             
     def _init_params(self, X, iter_max):
-        
         self.n_samples, self.n_feature = X.shape
         self.max_iter = iter_max
         self.mu = np.random.randn(self.n_clusters, self.n_feature)
