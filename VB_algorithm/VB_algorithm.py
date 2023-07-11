@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d import Axes3D
 
-
 class VB_algorithm_GMM:
     def __init__(self, n_clusters=4):
         np.random.seed(seed=42)
@@ -109,7 +108,7 @@ class VB_algorithm_GMM:
             
         return total_likelihood
 
-    def fit(self, X, iter_max):
+    def fit(self, X, iter_max = 50):
         self._init_params(X)
         prelikelihood = -1000000
         for i in range(iter_max):
@@ -131,8 +130,10 @@ X = data.values
 Y = [float(s) for s in data.columns]
 X = np.vstack([Y, X])
 
-model = VB_algorithm_GMM(n_clusters=4)
-gamma, pi, mu, Sigma = model.fit(X, iter_max=100)
+#assuming the number of cluster is 4
+n_clusters = 4
+model = VB_algorithm_GMM(n_clusters=n_clusters)
+gamma, pi, mu, Sigma = model.fit(X)
 labels = np.argmax(gamma, axis=1)
 
 dfz = pd.DataFrame(gamma).to_csv('z.csv', index=False, header=None)
@@ -154,3 +155,39 @@ for n in range(n_sample):
     ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
 ax.view_init(elev=30, azim=45)
 plt.show()
+
+"""
+#assuming the number of cluster is 3
+n_clusters = 3
+model = VB_algorithm_GMM(n_clusters=n_clusters)
+gamma, pi, mu, Sigma = model.fit(X)
+labels = np.argmax(gamma, axis=1)
+
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
+
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
+plt.show()
+"""
+
+"""
+#assuming the number of cluster is 5
+n_clusters = 5
+model = VB_algorithm_GMM(n_clusters=n_clusters)
+gamma, pi, mu, Sigma = model.fit(X)
+labels = np.argmax(gamma, axis=1)
+
+cm = plt.get_cmap("tab10")
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection="3d")
+n_sample = X.shape[0]
+
+for n in range(n_sample):
+    ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+ax.view_init(elev=30, azim=45)
+plt.show()
+"""

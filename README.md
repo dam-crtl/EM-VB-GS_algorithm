@@ -24,7 +24,8 @@ This file contains the value of parameters \boldsymbol{\pi}, \boldsymbol{\mu}, \
 This file contains the information of command that are used to execute "EM_algorithm.py". 
 ##### EM_algorithm.py:
 This file contains implementation of EM algorithm. By executing this file, you can get z.csv and params.dat. Furthermore, you can see how the points of x.csv is classified when using EM algorithm.
-
+If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 101 to 125 and uncommentng the lines from 129 to 143.
+If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 101 to 125 and uncommentng the lines from 147 to 161.
 ### VB_algorithm
 This is the file for implementaion of VB algorithm.
 This file contains "x.csv", "z.csv", "your_executable_command", "VB_algorithm.py"
@@ -38,3 +39,5 @@ This file contains the value of parameters \boldsymbol{\pi}, \boldsymbol{\mu}, \
 This file contains the information of command that are used to execute "VB_algorithm.py". 
 ##### VB_algorithm.py:
 This file contains implementation of VB algorithm. By executing this file, you can get z.csv and params.dat. Furthermore, you can see how the points of x.csv is classified when using VB algorithm.
+If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 160 to 174.
+If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 178 to 192.
