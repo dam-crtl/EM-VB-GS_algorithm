@@ -1,76 +1,195 @@
+import sys
 import numpy as np
-from scipy.stats import multivariate_normal
+import pandas as pd
+#from scipy.special import diz, logsumexp
+from scipy.stats import multivariate_normal, wishart, dirichlet
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from mpl_toolkits.mplot3d import Axes3D
 
-def gibbs_sampling(data, num_clusters, num_iterations):
-    num_points = len(data)
+class VB_algorithm_GMM:
+    def __init__(self, n_clusters=4):
+        np.random.seed(seed=42)
+        self.n_clusters = n_clusters
+        self.alpha0 = 0.01
+        self.beta0 = 1.0
+        self.threshold = 0.01
+        self.n_sample = None
+        self.n_feature = None
+        self.m0 = None
+        self.W0 = None
+        self.nu0 = None
+        self.z = None
+        self.alpha = None
+        self.beta = None
+        self.m = None
+        self.W = None
+        self.pi = None
+        self.nu = None
+        self.Sigma = None
+
+    def _init_params(self, X):
+        self.n_sample, self.n_feature = X.shape
+        self.m0 = np.random.randn(self.n_feature)
+        self.W0 = np.eye(self.n_feature)
+        self.nu0 = np.array([self.n_feature])
+        self.z = np.ones((self.n_sample, self.n_clusters)) * (self.n_sample / self.n_clusters)
+        self.z_prob = np.ones((self.n_sample, self.n_clusters)) * (self.n_sample / self.n_clusters)
+        self.alpha = np.ones(self.n_clusters) * self.alpha0
+        self.beta = np.ones(self.n_clusters) * self.beta0
+        self.m = np.random.randn(self.n_clusters, self.n_feature)
+        self.pi = np.ones((self.n_clusters)) / self.n_clusters
+        self.nu = np.ones((self.n_clusters, 1)) * self.n_feature
+        self.W = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        self.Sigma = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        for k in range(self.n_clusters):
+            self.W[k] = np.eye(self.n_feature)
+            self.Sigma[k] = np.linalg.inv(self.nu[k] * self.W[k])
+        self.mu = np.random.randn(self.n_clusters, self.n_feature)
+
+    def _expectation(self, x):
+        z_prob = np.zeros_like(self.z_prob)
+        for n in range(self.n_sample):
+            sum_pi = 0
+            pi = np.zeros((self.n_clusters))
+            for k in range(self.n_clusters):
+                pi[k] = self.pi[k] * self._multivariate_gaussian(x[n], self.mu[k], self.Sigma[k])
+                sum_pi += pi[k]
+            for k in range(self.n_clusters):
+                z_prob[n][k] = pi[k] / sum_pi
+        self.z_prob = z_prob
+
+    def _maximization(self, X):
+        for n in range(self.n_sample):
+            self.z[n] = np.random.multinomial(n=1, pvals=self.z_prob[n]).flatten()
+
+        sum_z = np.zeros(self.n_clusters)
+        sum_z_x = np.zeros((self.n_clusters, self.n_feature))
+        sum_z_xx = np.zeros((self.n_clusters, self.n_feature, self.n_feature))
+        for k in range(self.n_clusters):
+            for n in range(self.n_sample):
+                sum_z[k] += self.z[n][k]
+                sum_z_x[k] += self.z[n][k] * X[n]
+                sum_z_xx[k] += self.z[n][k] * X[n].reshape((-1, 1)) @ X[n].reshape((-1, 1)).T
+        self.alpha = self.alpha0 + sum_z
+        self.beta = self.beta0 + sum_z
+        for k in range(self.n_clusters):
+            self.m[k] = (self.beta0 * self.m0 + sum_z_x[k]) / (self.beta0 + sum_z[k])
+        for k in range(self.n_clusters):
+            self.W[k] = np.linalg.inv(np.linalg.inv(self.W0) + self.beta0 * self.m0.reshape((-1, 1)) @ self.m0.reshape((-1, 1)).T 
+                                      + sum_z_xx[k] - self.beta[k] * self.m[k].reshape((-1, 1)) @ self.m[k].reshape((-1, 1)).T)
+            self.nu[k] = self.nu0 + sum_z[k]
+        for k in range(self.n_clusters):
+            self.mu[k] = np.random.multivariate_normal(mean=self.m[k], cov=self.Sigma[k]).flatten()
+            self.Sigma[k] = np.linalg.inv(wishart.rvs(size=1, df=self.nu[k][0], scale=self.W[k])).reshape((self.n_feature, self.n_feature))
+        self.pi = dirichlet.rvs(size=1, alpha=self.alpha).flatten()
+
+    def _multivariate_gaussian(self, x, mu, Sigma):
+        Sigma_inv = np.linalg.inv(Sigma)
+        Sigma_det = np.linalg.det(Sigma)
+        exponent = -(x - mu).T @ Sigma_inv @ (x - mu) / 2.0
+        const = 1 / ((np.sqrt(2 * np.pi) ** self.n_feature) * np.sqrt(Sigma_det))
+        return const * np.exp(exponent)
+
+    def _mixed_gaussian(self, X, mu, Sigma, pi):
+        output = np.zeros((self.n_sample))
+        for i in range(self.n_clusters):
+            for j in range(self.n_sample):
+                output[j] += pi[i] * self._multivariate_gaussian(X[j], mu[i], Sigma[i])
+        return output
+
+    def _log_likelihood(self, X):
+        gaussians = self._mixed_gaussian(X, self.mu, self.Sigma, self.pi)
+        total_likelihood = 0
+        for i in range(self.n_sample):
+            total_likelihood += np.log(gaussians[i])
+            
+        return total_likelihood
+
+    def fit(self, X, iter_max = 50):
+        self._init_params(X)
+        prelikelihood = -1000000
+        for i in range(iter_max):
+            self._expectation(X)
+            self._maximization(X)
+            likelihood = self._log_likelihood(X)
+            print(f"number of iteration {i + 1} : log-likelihood {likelihood}")
+            if np.abs(likelihood - prelikelihood) < self.threshold:
+                print("Early Stop!")
+                break
+            else:
+                prelikelihood = likelihood
+                
+        return self.z, self.pi, self.mu, self.Sigma
+
+if __name__== '__main__':
     
-    # 初期化: ランダムにクラスターを割り当てる
-    assignments = np.random.randint(num_clusters, size=num_points)
+    path_to_csv = './' + sys.argv[1]
+    data = pd.read_csv(path_to_csv)
+    X = data.values
+    Y = [float(s) for s in data.columns]
+    X = np.vstack([Y, X])
+    
+    """
+    #assuming the number of cluster is 4
+    n_clusters = 4
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
 
-    # 各クラスターの初期平均と共分散行列を設定
-    means = np.random.randn(4, 3)
-    covs = [np.eye(3) for _ in range(num_clusters)]
-    #print(means)
-    #print(covs)
-    # サンプリングループ
-    print(means[3])
-    for _ in range(num_iterations):
-        # 各データポイントについて
-        for i in range(num_points):
-            point = data[i]
+    dfz = pd.DataFrame(z).to_csv(sys.argv[2], index=False, header=None)
+    with open(sys.argv[3], 'w') as f:
+        f.write(f'Weight: pi\n')
+        f.write(str(pi))
+        f.write(f'\nMeans of Gaussian Functions: mu\n')
+        f.write(str(mu))
+        f.write(f'\nVariances of Gaussian Functions: Sigma\n')
+        f.write(str(Sigma))
+        f.close()
 
-            # 現在のクラスターを取得
-            current_cluster = assignments[i]
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-            # 現在のクラスターからのポイントを削除
-            counts = np.bincount(assignments, minlength=num_clusters)
-            counts[current_cluster] -= 1
-            print(means[3])
-            # 各クラスターごとに対数尤度を計算
-            log_likelihoods = []
-            for j in range(num_clusters):
-                print(j)
-                print(means[j])
-                #print(covs[j])
-                log_likelihood = np.log(counts[j] + 1) + multivariate_normal.logpdf(point, means[j], covs[j], allow_singular=True)
-                log_likelihoods.append(log_likelihood)
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    """
+    
+    """
+    #assuming the number of cluster is 3
+    n_clusters = 3
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
 
-            # クラスターをサンプリング
-            probabilities = np.exp(log_likelihoods - np.max(log_likelihoods))
-            probabilities /= np.sum(probabilities)
-            new_cluster = np.random.choice(num_clusters, p=probabilities)
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-            # 新しいクラスターにポイントを割り当て
-            assignments[i] = new_cluster
-            counts[new_cluster] += 1
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    """
 
-        # 各クラスターごとに平均と共分散行列を更新
-        for j in range(num_clusters):
-            points = data[assignments == j]
-            #print(j)
-            #print(points)
-            means[j] = np.mean(points, axis=0)
-            covs[j] = np.cov(points.T)
+    
+    #assuming the number of cluster is 5
+    n_clusters = 5
+    model = VB_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
 
-    return assignments, means, covs
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
 
-
-# テストデータ生成
-np.random.seed(0)
-data = np.concatenate([
-    np.random.multivariate_normal([1, 1, 1], [[0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]], size=100),
-    np.random.multivariate_normal([4, 4, 4], [[0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]], size=100),
-    np.random.multivariate_normal([7, 7, 7], [[0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]], size=100),
-    np.random.multivariate_normal([10, 10, 10], [[0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]], size=100)
-])
-
-# クラスタリングの実行
-num_clusters = 4
-num_iterations = 100
-assignments, means, covs = gibbs_sampling(data, 4, num_iterations)
-
-# 結果表示
-print("クラスタリング結果:")
-for i in range(num_clusters):
-    cluster_points = data[assignments == i]
-    print(f"クラスター {i + 1}: ポイント数 = {len(cluster_points)}, 平均 = {means[i]}, 共分散行列 = \n{covs[i]}")
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+    
