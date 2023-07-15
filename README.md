@@ -175,3 +175,86 @@ The lines from 183 to 197 are the below.
     ax.view_init(elev=30, azim=45)
     plt.show()
 ``` 
+
+### GS_algorithm
+This is the file for implementaion of GS algorithm.
+This file contains "x.csv", "z.csv", "your_executable_command", "GS_algorithm.py"
+#### x.csv:
+This file contains input dataset.
+#### z.csv:
+This file contains posterior probabilities of latent variables.This file does not have both index and header
+#### params.dat
+This file contains the value of parameters $\boldsymbol{\pi}$, $\boldsymbol{\mu}$, $\boldsymbol{\Sigma}$
+#### GS_algorithm.py:
+This file contains implementation of VB algorithm. By executing this file, you can get "z.csv" and "params.dat". Furthermore, you can see how the points of "x.csv" is classified when using VB algorithm.
+When you execute this file, please enter the following command line.
+
+```console
+$ python GS_algorithm.py x.csv z.csv params.dat
+``` 
+If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 161 to 175.
+If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 179 to 193.\
+The lines from 133 to 157 are the below.
+```python
+    #assuming the number of cluster is 4
+    n_clusters = 4
+    model = GS_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
+
+    dfz = pd.DataFrame(z).to_csv(sys.argv[2], index=False, header=None)
+    with open(sys.argv[3], 'w') as f:
+        f.write(f'Weight: pi\n')
+        f.write(str(pi))
+        f.write(f'\nMeans of Gaussian Functions: mu\n')
+        f.write(str(mu))
+        f.write(f'\nVariances of Gaussian Functions: Sigma\n')
+        f.write(str(Sigma))
+        f.close()
+
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
+
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+``` 
+The lines from 161 to 175 are the below.
+```python
+    #assuming the number of cluster is 3
+    n_clusters = 3
+    model = GS_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
+
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
+
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+``` 
+The lines from 179 to 193 are the below.
+```python
+    #assuming the number of cluster is 5
+    n_clusters = 5
+    model = GS_algorithm_GMM(n_clusters=n_clusters)
+    z, pi, mu, Sigma = model.fit(X)
+    labels = np.argmax(z, axis=1)
+
+    cm = plt.get_cmap("tab10")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection="3d")
+    n_sample = X.shape[0]
+
+    for n in range(n_sample):
+        ax.plot([X[n][0]], [X[n][1]], [X[n][2]], "o", color=cm(labels[n]))
+    ax.view_init(elev=30, azim=45)
+    plt.show()
+``` 
