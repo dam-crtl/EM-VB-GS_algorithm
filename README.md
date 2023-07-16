@@ -26,7 +26,7 @@ When you execute this file, please enter the following command line.
 ```console
 $ python EM_algorithm.py x.csv z.csv params.dat
 ``` 
-
+When executing this command, the value of log likelihood in each iteration will be shown.\
 If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 102 to 126 and uncommentng the lines from 130 to 144.
 If you want to get the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 102 to 126 and uncommentng the lines from 148 to 162.\
 The lines from 102 to 126 are the below.
@@ -109,6 +109,7 @@ When you execute this file, please enter the following command line.
 ```console
 $ python VB_algorithm.py x.csv z.csv params.dat
 ``` 
+When executing this command, the value of log likelihood in each iteration will be shown.\
 If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 137 to 161 and uncommentng the lines from 165 to 179.
 If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 137 to 161 and uncommentng the lines from 183 to 197.\
 The lines from 137 to 161 are the below.
@@ -192,6 +193,7 @@ When you execute this file, please enter the following command line.
 ```console
 $ python GS_algorithm.py x.csv z.csv params.dat
 ``` 
+When executing this command, the value of log likelihood in each iteration will be shown.\
 If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 161 to 175.
 If you want to get only the figure when the number of the cluster set to three, you have to execute this file after commenting out the lines from 133 to 157 and uncommentng the lines from 179 to 193.\
 The lines from 133 to 157 are the below.
