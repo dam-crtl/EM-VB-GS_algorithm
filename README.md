@@ -1,7 +1,6 @@
-<<<<<<< HEAD
-# EM-VB_algorithm
+# EM-VB-GS_algorithm
 
-This "submission" file contains "EM_algorithm" and "VB_algorithm".
+This "submission" file contains "EM_algorithm", "VB_algorithm" and "GS_algorithm".
 Here, I will explain about each folder.
 ## environment 
 #### used modules:
@@ -261,6 +260,4 @@ The lines from 179 to 193 are the below.
     ax.view_init(elev=30, azim=45)
     plt.show()
 ``` 
-=======
-# EM-VB-GS_algorithm
->>>>>>> origin/main
+
