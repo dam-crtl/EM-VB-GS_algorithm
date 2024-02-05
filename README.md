@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # EM-VB_algorithm
 
 This "submission" file contains "EM_algorithm" and "VB_algorithm".
@@ -260,3 +261,6 @@ The lines from 179 to 193 are the below.
     ax.view_init(elev=30, azim=45)
     plt.show()
 ``` 
+=======
+# EM-VB-GS_algorithm
+>>>>>>> origin/main
