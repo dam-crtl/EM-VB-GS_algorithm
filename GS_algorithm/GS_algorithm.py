@@ -5,7 +5,6 @@ from scipy.stats import multivariate_normal, wishart, dirichlet
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d import Axes3D
-
 class GS_algorithm_GMM:
     def __init__(self, n_clusters=4):
         np.random.seed(seed=42)
